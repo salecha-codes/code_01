@@ -1,0 +1,8 @@
+node_modules
+client/dist
+package-lock.json
+.playwright
+.env
+.env.*
+docs/screenshots
+scripts/setup-cloud.sh
