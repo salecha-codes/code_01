@@ -6,7 +6,7 @@ ClubPulse is a MERN application for college clubs to collect anonymous event fee
 
 Built for a technical recruitment demonstration, with readable controllers, real persistence, and a companion [interview guide](INTERVIEW_PREP.md).
 
-> **Status:** implemented and locally verified. Deployment templates are included, but no cloud service has been created, no repository has been published, and no live deployment has been verified. Deployment and publication require the owner's approval. Do not activate paid services.
+> **Status:** implemented and locally verified. The initial application was pushed to GitHub with the owner’s approval. This revision includes the complete frontend redesign. No live deployment has been verified. The owner has approved publishing this source revision. Deployment still requires approval; do not activate paid services.
 
 ## Why this exists
 
@@ -20,7 +20,7 @@ Students may hesitate to criticize a workshop when their name is attached. Organ
 - Admin overview: total responses, total events, average rating, positive percentage, 30-day activity, rating distribution, event comparison, and recent feedback.
 - Combined server-side filters for event, rating, category, inclusive UTC date range, and literal comment search; pagination with totals.
 - Event creation, editing, and opening/closing feedback, with associated response counts.
-- Responsive charcoal/purple interface, keyboard-accessible labels, loading/error/empty states, and mobile navigation.
+- Responsive dark interface with a consistent design system, mobile feedback cards, keyboard-accessible dialogs, loading/error/empty states, and mobile navigation. See the [interface guide](docs/DESIGN.md).
 - Input validation, request-size limits, rate limiting, exact-origin CORS, CSRF protection, and Helmet headers.
 - Real-database API tests and end-to-end Chromium tests.
 
@@ -28,12 +28,14 @@ Students may hesitate to criticize a workshop when their name is attached. Organ
 
 ## Screenshots
 
-These screenshots show the real application. The dashboard and mobile form use clearly labeled automated-test events and a response actually submitted through the UI to an isolated MongoDB database.
+These screenshots show the real application. The screenshots use clearly labeled automated-test events. Dashboard responses were actually submitted through the UI to an isolated MongoDB database.
 
 ![ClubPulse landing page](docs/screenshots/landing.png)
-![Admin overview with a real browser-test response](docs/screenshots/overview.png)
+![Admin overview with real browser-test responses](docs/screenshots/overview.png)
 
-[Mobile feedback form](docs/screenshots/feedback-mobile.png)
+[Mobile feedback form](docs/screenshots/feedback-mobile.png) · [Mobile admin feedback](docs/screenshots/admin-feedback-mobile.png) · [Empty overview](docs/screenshots/overview-empty.png) · [Admin login](docs/screenshots/login.png)
+
+For changed files, design decisions, and updated preview instructions, see [DESIGN.md](docs/DESIGN.md).
 
 ## Stack and architecture
 

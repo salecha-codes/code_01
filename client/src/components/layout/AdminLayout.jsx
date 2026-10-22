@@ -9,11 +9,62 @@ import {
   Menu,
   MessageSquare,
   ShieldCheck,
-  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Brand } from '../ui/Common';
+import { Brand, Dialog } from '../ui/Common';
 import { useAuth } from '../../context/AuthContext';
+const items = [
+  [LayoutDashboard, 'Overview', '/admin'],
+  [MessageSquare, 'Feedback', '/admin/feedback'],
+  [CalendarDays, 'Events', '/admin/events'],
+];
+function WorkspaceNavigation({ admin, busy, onSignOut, onNavigate }) {
+  return (
+    <>
+      <div className="workspace-identity">
+        <span className="workspace-avatar">C</span>
+        <div>
+          <strong>Club workspace</strong>
+          <span>Organizer workspace</span>
+        </div>
+      </div>
+      <p className="nav-label">WORKSPACE</p>
+      <nav aria-label="Admin navigation">
+        {items.map(([Icon, label, to]) => (
+          <NavLink end={to === '/admin'} key={to} to={to} onClick={onNavigate}>
+            <Icon size={18} />
+            <span>{label}</span>
+            <span className="nav-active-dot" />
+          </NavLink>
+        ))}
+      </nav>
+      <div className="sidebar-bottom">
+        <Link className="portal-link" to="/feedback" onClick={onNavigate}>
+          <ArrowUpRight size={17} />
+          <span>Open feedback portal</span>
+        </Link>
+        <div className="sidebar-note">
+          <ShieldCheck size={17} />
+          <p>
+            Feedback stays anonymous.
+            <br />
+            Insights stay in your hands.
+          </p>
+        </div>
+        <div className="admin-profile">
+          <span className="profile-avatar">{admin.email[0].toUpperCase()}</span>
+          <div>
+            <strong>Administrator</strong>
+            <span title={admin.email}>{admin.email}</span>
+          </div>
+          <button className="icon-button" onClick={onSignOut} disabled={busy} aria-label="Sign out">
+            <LogOut size={17} />
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
 export default function AdminLayout() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -36,73 +87,27 @@ export default function AdminLayout() {
       setBusy(false);
     }
   }
+  const navProps = { admin, busy, onSignOut: signOut, onNavigate: () => setOpen(false) };
   return (
     <div className="admin-shell">
-      {open && (
-        <button
-          className="sidebar-overlay"
-          aria-label="Close navigation"
-          onClick={() => setOpen(false)}
-        />
-      )}
-      <aside className={`sidebar ${open ? 'is-open' : ''}`}>
+      <aside className="sidebar desktop-sidebar">
         <div className="sidebar-brand">
           <Brand />
-          <button
-            className="icon-button mobile-only"
-            aria-label="Close menu"
-            onClick={() => setOpen(false)}
-          >
-            <X size={20} />
-          </button>
         </div>
-        <div className="workspace-switch">
-          <span className="workspace-avatar">C</span>
-          <div>
-            <strong>Club workspace</strong>
-            <span>Administrator</span>
-          </div>
-          <ShieldCheck size={16} />
-        </div>
-        <p className="nav-label">WORKSPACE</p>
-        <nav aria-label="Admin navigation">
-          {[
-            [LayoutDashboard, 'Overview', '/admin'],
-            [MessageSquare, 'Feedback', '/admin/feedback'],
-            [CalendarDays, 'Events', '/admin/events'],
-          ].map(([Icon, label, to]) => (
-            <NavLink end={to === '/admin'} key={to} to={to} onClick={() => setOpen(false)}>
-              <Icon size={18} />
-              {label}
-              <ChevronRight className="nav-chevron" size={14} />
-            </NavLink>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="privacy-card">
-            <ShieldCheck size={19} />
-            <strong>Honest by design.</strong>
-            <p>No student accounts. No names attached. Just feedback that matters.</p>
-            <Link to="/feedback">
-              Open feedback portal
-              <ArrowUpRight size={14} />
-            </Link>
-          </div>
-          <div className="admin-profile">
-            <span className="profile-avatar">{admin.email[0].toUpperCase()}</span>
-            <div>
-              <strong>Club administrator</strong>
-              <span title={admin.email}>{admin.email}</span>
-            </div>
-            <button className="icon-button" onClick={signOut} disabled={busy} aria-label="Sign out">
-              <LogOut size={17} />
-            </button>
-          </div>
-        </div>
+        <WorkspaceNavigation {...navProps} />
       </aside>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="ClubPulse workspace"
+        className="navigation-dialog"
+        closeLabel="Close navigation"
+      >
+        <WorkspaceNavigation {...navProps} />
+      </Dialog>
       <div className="admin-main">
         <header className="admin-topbar">
-          <div>
+          <div className="breadcrumbs">
             <button
               className="icon-button mobile-only"
               aria-label="Open navigation"
@@ -115,16 +120,23 @@ export default function AdminLayout() {
             <ChevronRight size={14} />
             <strong>{current}</strong>
           </div>
-          <Link to="/feedback">
-            View public portal
-            <ArrowUpRight size={15} />
-          </Link>
+          <div className="topbar-right">
+            <span className="private-workspace">
+              <ShieldCheck size={14} />
+              Private workspace
+            </span>
+            <Link className="text-link" to="/feedback">
+              Public portal
+              <ArrowUpRight size={15} />
+            </Link>
+          </div>
         </header>
-        <main id="main-content" className="admin-content">
+        <main id="main-content" className="admin-content" tabIndex={-1}>
           <Outlet />
         </main>
         <footer className="admin-footer">
-          ClubPulse <span>Built for communities that listen.</span>
+          <span>ClubPulse</span>
+          <span>Thoughtful feedback. Better experiences.</span>
         </footer>
       </div>
     </div>

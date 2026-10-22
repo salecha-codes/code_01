@@ -1,19 +1,25 @@
 import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import {
-  ArrowUpRight,
-  CalendarDays,
-  LoaderCircle,
-  MessageSquare,
-  Pencil,
-  Plus,
-  X,
-} from 'lucide-react';
+import { ArrowRight, ArrowUpRight, CalendarDays, MessageSquare, Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApi } from '../hooks/useApi';
 import { api } from '../services/api';
 import { formatDate } from '../utils/format';
-import { EmptyState, ErrorState, Loading, PageHeader } from '../components/ui/Common';
+import {
+  Badge,
+  Button,
+  Card,
+  Dialog,
+  EmptyState,
+  ErrorState,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  Skeleton,
+  Tabs,
+  Textarea,
+} from '../components/ui/Common';
 const blank = { title: '', description: '', date: '', status: 'active' };
 export default function EventsManagement() {
   const [params, setParams] = useSearchParams();
@@ -22,6 +28,7 @@ export default function EventsManagement() {
   const [form, setForm] = useState(blank);
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [status, setStatus] = useState('all');
   function open(event) {
     setEditing(event ? event._id : 'new');
     setForm(
@@ -52,7 +59,9 @@ export default function EventsManagement() {
         body: form,
       });
       toast.success(
-        editing === 'new' ? 'Event created. Feedback is ready when you are.' : 'Event updated.',
+        editing === 'new'
+          ? 'Event created. You’re ready to hear from your community.'
+          : 'Event updated.',
       );
       close();
       reload();
@@ -63,165 +72,207 @@ export default function EventsManagement() {
     }
   }
   const change = (event) => setForm({ ...form, [event.target.name]: event.target.value });
+  const visible = data?.events.filter((event) => status === 'all' || event.status === status) || [];
   return (
     <>
       <PageHeader
-        eyebrow="MAKE ROOM FOR GREAT EXPERIENCES"
-        title="Events"
-        description="Create a conversation around every workshop and gathering."
+        eyebrow="YOUR EVENTS"
+        title="Great experiences start here."
+        description="A space for every event. A conversation after every experience."
         action={
-          <button className="button primary small" onClick={() => open()}>
+          <Button size="small" onClick={() => open()}>
             <Plus size={16} />
             Create event
-          </button>
+          </Button>
         }
       />
-      {editing && (
-        <section className="panel event-editor" aria-labelledby="editor-title">
-          <div className="section-title">
-            <h2 id="editor-title">{editing === 'new' ? 'Create an event' : 'Edit event'}</h2>
-            <button
-              className="icon-button"
-              onClick={close}
-              disabled={busy}
-              aria-label="Close event editor"
-            >
-              <X size={19} />
-            </button>
-          </div>
-          <form onSubmit={save}>
-            <div className="editor-grid">
-              <div>
-                <label htmlFor="title">Event title</label>
-                <input
-                  id="title"
-                  name="title"
-                  value={form.title}
-                  onChange={change}
-                  minLength={3}
-                  maxLength={120}
-                  placeholder="e.g. Intro to Web Development"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="date">Event date</label>
-                <input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={form.date}
-                  onChange={change}
-                  required
-                />
-              </div>
-            </div>
-            <label htmlFor="description">
-              Description <span className="optional">(optional)</span>
-            </label>
-            <textarea
+      <Dialog
+        open={Boolean(editing)}
+        onClose={close}
+        title={editing === 'new' ? 'Create an event' : 'Edit event'}
+        description={
+          editing === 'new'
+            ? 'Give your participants a place to be heard.'
+            : 'Update the details and manage feedback collection.'
+        }
+        busy={busy}
+        closeLabel="Close event editor"
+      >
+        <form className="event-editor" onSubmit={save} aria-busy={busy}>
+          <Field id="title" label="Event title" required>
+            <Input
+              data-dialog-autofocus
+              id="title"
+              name="title"
+              value={form.title}
+              onChange={change}
+              minLength={3}
+              maxLength={120}
+              placeholder="e.g. Intro to Web Development"
+              required
+            />
+          </Field>
+          <Field id="description" label="Description" optional>
+            <Textarea
               id="description"
               name="description"
               value={form.description}
               onChange={change}
               rows={3}
               maxLength={1000}
-              placeholder="What’s this event about?"
+              placeholder="A little context for your participants…"
             />
-            <label htmlFor="status">Feedback collection</label>
-            <select id="status" name="status" value={form.status} onChange={change}>
-              <option value="active">Open — accepting feedback</option>
-              <option value="closed">Closed — no new responses</option>
-            </select>
-            <p className="field-hint">
-              The status controls submissions. The event date does not automatically close feedback.
+          </Field>
+          <div className="editor-grid">
+            <Field id="date" label="Event date" required>
+              <Input
+                id="date"
+                name="date"
+                type="date"
+                value={form.date}
+                onChange={change}
+                required
+              />
+            </Field>
+            <Field id="status" label="Feedback collection">
+              <Select id="status" name="status" value={form.status} onChange={change}>
+                <option value="active">Open for feedback</option>
+                <option value="closed">Closed</option>
+              </Select>
+            </Field>
+          </div>
+          <div className="editor-note">
+            <MessageSquare size={17} />
+            <p>
+              {form.status === 'active'
+                ? 'Participants can submit feedback while this event is open.'
+                : 'Participants can’t submit new feedback. Existing responses stay available.'}{' '}
+              You control when collection closes; the date doesn’t close it automatically.
             </p>
-            {saveError && (
-              <p className="form-error" role="alert">
-                {saveError}
-              </p>
-            )}
-            <div className="editor-actions">
-              <button
-                className="button secondary small"
-                type="button"
-                onClick={close}
-                disabled={busy}
-              >
-                Cancel
-              </button>
-              <button className="button primary small" disabled={busy}>
-                {busy && <LoaderCircle className="spin" size={15} />}{' '}
-                {busy ? 'Saving…' : 'Save event'}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
+          </div>
+          {saveError && (
+            <p className="form-error" role="alert">
+              {saveError}
+            </p>
+          )}
+          <div className="dialog-actions">
+            <Button variant="secondary" onClick={close} disabled={busy}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={busy}>
+              {busy ? 'Saving…' : 'Save event'}
+              {!busy && <ArrowRight size={15} />}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
       {loading ? (
-        <Loading label="Loading your events…" />
+        <Skeleton kind="cards" count={4} label="Loading your events…" />
       ) : error ? (
-        <ErrorState message={error} retry={reload} />
-      ) : !data.events.length ? (
-        <div className="panel">
-          <EmptyState
-            title="Your next great event starts here"
-            message="Create an event to give your participants a place to be heard."
-          >
-            <button className="button primary small" onClick={() => open()}>
-              <Plus size={15} />
-              Create your first event
-            </button>
-          </EmptyState>
-        </div>
+        <Card>
+          <ErrorState message={error} retry={reload} />
+        </Card>
       ) : (
         <>
-          <div className="events-summary">
-            <span>{data.events.length} events in your workspace</span>
+          <div className="events-toolbar">
+            <Tabs
+              label="Filter events by feedback status"
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: 'all', label: 'All events', count: data.events.length },
+                {
+                  value: 'active',
+                  label: 'Open',
+                  count: data.events.filter((event) => event.status === 'active').length,
+                },
+                {
+                  value: 'closed',
+                  label: 'Closed',
+                  count: data.events.filter((event) => event.status === 'closed').length,
+                },
+              ]}
+            />
             <span>
-              <span className="live-dot" />
-              {data.events.filter((event) => event.status === 'active').length} accepting feedback
+              {visible.length} {visible.length === 1 ? 'event' : 'events'}
             </span>
           </div>
-          <div className="event-grid admin-events">
-            {data.events.map((event) => (
-              <article className="event-card" key={event._id}>
-                <div className="event-card-top">
-                  <span className="icon-tile">
-                    <CalendarDays size={21} />
-                  </span>
-                  <span className={`status-badge ${event.status}`}>
-                    <span />
-                    {event.status === 'active' ? 'Feedback open' : 'Closed'}
-                  </span>
-                </div>
-                <h2>{event.title}</h2>
-                <p>{event.description || 'No description added yet.'}</p>
-                <div className="event-metadata">
-                  <span>
-                    <CalendarDays size={14} />
-                    {formatDate(event.date)}
-                  </span>
-                  <span>
-                    <MessageSquare size={14} />
-                    {event.feedbackCount} responses
-                  </span>
-                </div>
-                <div className="event-card-bottom">
-                  <button className="text-link" onClick={() => open(event)}>
-                    <Pencil size={14} />
-                    Edit event
-                  </button>
-                  {event.status === 'active' && (
-                    <Link className="text-link" to={`/feedback?event=${event._id}`}>
-                      Feedback page
-                      <ArrowUpRight size={14} />
+          {!visible.length ? (
+            <Card>
+              <EmptyState
+                icon={CalendarDays}
+                title={
+                  data.events.length
+                    ? 'No events in this view'
+                    : 'Your next great event starts here'
+                }
+                message={
+                  data.events.length
+                    ? 'Try another status to find your event.'
+                    : 'Create your first event, then share its feedback page with your participants.'
+                }
+              >
+                {data.events.length ? (
+                  <Button variant="secondary" size="small" onClick={() => setStatus('all')}>
+                    View all events
+                  </Button>
+                ) : (
+                  <Button size="small" onClick={() => open()}>
+                    <Plus size={15} />
+                    Create your first event
+                  </Button>
+                )}
+              </EmptyState>
+            </Card>
+          ) : (
+            <div className="event-grid admin-events">
+              {visible.map((event) => (
+                <Card as="article" className="event-card" key={event._id}>
+                  <div className="event-card-top">
+                    <div className="event-date-tile">
+                      <span>
+                        {new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'UTC' }).format(
+                          new Date(event.date),
+                        )}
+                      </span>
+                      <strong>{new Date(event.date).getUTCDate()}</strong>
+                    </div>
+                    <Badge dot tone={event.status === 'active' ? 'success' : 'neutral'}>
+                      {event.status === 'active' ? 'Feedback open' : 'Closed'}
+                    </Badge>
+                  </div>
+                  <h2>{event.title}</h2>
+                  <p>
+                    {event.description ||
+                      'Add a description to give your participants a little context.'}
+                  </p>
+                  <div className="event-metadata">
+                    <span>
+                      <CalendarDays size={14} />
+                      {formatDate(event.date)}
+                    </span>
+                    <Link to={`/admin/feedback?eventId=${event._id}`}>
+                      <MessageSquare size={14} />
+                      {event.feedbackCount} {event.feedbackCount === 1 ? 'response' : 'responses'}
+                      <ArrowUpRight size={12} />
                     </Link>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
+                  </div>
+                  <div className="event-card-bottom">
+                    <Button variant="secondary" size="small" onClick={() => open(event)}>
+                      <Pencil size={14} />
+                      Edit event
+                    </Button>
+                    {event.status === 'active' && (
+                      <Link className="text-link" to={`/feedback?event=${event._id}`}>
+                        Feedback page
+                        <ArrowUpRight size={15} />
+                      </Link>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </>
       )}
     </>

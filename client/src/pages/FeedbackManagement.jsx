@@ -1,12 +1,58 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Filter, Search, SlidersHorizontal, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  MessageSquare,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { categories, formatDate } from '../utils/format';
-import { EmptyState, ErrorState, Loading, PageHeader, Rating } from '../components/ui/Common';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Field,
+  Input,
+  PageHeader,
+  Rating,
+  Select,
+  Skeleton,
+  Table,
+} from '../components/ui/Common';
 const empty = { eventId: '', rating: '', category: '', startDate: '', endDate: '', search: '' };
+function Comment({ item, expanded, toggle }) {
+  return (
+    <div className="response-comment">
+      <p className={expanded ? '' : 'comment-preview'}>
+        {item.comment || <span className="muted">No written comment</span>}
+      </p>
+      {item.comment.length > 140 && (
+        <button type="button" className="text-link" onClick={toggle} aria-expanded={expanded}>
+          {expanded ? 'Show less' : 'Read full comment'}
+        </button>
+      )}
+    </div>
+  );
+}
+function Recommendation({ value }) {
+  return (
+    <span className={`recommendation ${value === true ? 'yes' : ''}`}>
+      {value === undefined ? 'Not answered' : value ? 'Yes' : 'No'}
+    </span>
+  );
+}
 export default function FeedbackManagement() {
-  const [draft, setDraft] = useState(empty);
-  const [filters, setFilters] = useState(empty);
+  const [params, setParams] = useSearchParams();
+  const initialFilters = { ...empty, eventId: params.get('eventId') || '' };
+  const [draft, setDraft] = useState(initialFilters);
+  const [filters, setFilters] = useState(initialFilters);
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState(null);
   const events = useApi('/admin/events');
@@ -19,79 +65,103 @@ export default function FeedbackManagement() {
   const change = (event) => setDraft({ ...draft, [event.target.name]: event.target.value });
   function apply(event) {
     event.preventDefault();
+    setParams(draft.eventId ? { eventId: draft.eventId } : {}, { replace: true });
     setFilters({ ...draft, search: draft.search.trim() });
     setPage(1);
   }
   function clear() {
+    setParams({}, { replace: true });
     setDraft(empty);
     setFilters(empty);
     setPage(1);
   }
+  function removeFilter(key) {
+    if (key === 'eventId') setParams({}, { replace: true });
+    setFilters({ ...filters, [key]: '' });
+    setDraft({ ...draft, [key]: '' });
+    setPage(1);
+  }
+  function filterLabel(key, value) {
+    if (key === 'eventId')
+      return events.data?.events.find((event) => event._id === value)?.title || 'Selected event';
+    if (key === 'rating') return `${value} stars`;
+    if (key === 'startDate') return `From ${value}`;
+    if (key === 'endDate') return `To ${value}`;
+    if (key === 'search') return `“${value}”`;
+    return value;
+  }
   return (
     <>
       <PageHeader
-        eyebrow="LISTEN CLOSELY. BUILD BETTER."
-        title="Feedback"
-        description="Every response is a chance to make the next event better."
+        eyebrow="COMMUNITY FEEDBACK"
+        title="Every response has a story."
+        description="Find the perspectives that help you make the next event better."
       />
-      <form className="panel filter-panel" onSubmit={apply}>
+      <Card as="form" className="filter-panel" onSubmit={apply}>
         <div className="filter-heading">
           <h2>
-            <SlidersHorizontal size={16} />
-            Find the feedback that matters
+            <SlidersHorizontal size={17} />
+            Filter responses
           </h2>
           {count > 0 && (
             <button className="text-link" type="button" onClick={clear}>
-              <X size={14} />
-              Clear filters ({count})
+              Clear filters ({count})<X size={14} />
             </button>
           )}
         </div>
         <div className="filter-grid">
-          <div>
-            <label htmlFor="filter-event">Event</label>
-            <select id="filter-event" name="eventId" value={draft.eventId} onChange={change}>
+          <Field id="filter-event" label="Event">
+            <Select id="filter-event" name="eventId" value={draft.eventId} onChange={change}>
               <option value="">All events</option>
               {events.data?.events.map((event) => (
                 <option key={event._id} value={event._id}>
                   {event.title}
                 </option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="filter-rating">Rating</label>
-            <select id="filter-rating" name="rating" value={draft.rating} onChange={change}>
+            </Select>
+          </Field>
+          <Field id="filter-rating" label="Rating">
+            <Select id="filter-rating" name="rating" value={draft.rating} onChange={change}>
               <option value="">All ratings</option>
               {[5, 4, 3, 2, 1].map((value) => (
-                <option key={value} value={value}>
+                <option value={value} key={value}>
                   {value} {value === 1 ? 'star' : 'stars'}
                 </option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="filter-category">Category</label>
-            <select id="filter-category" name="category" value={draft.category} onChange={change}>
+            </Select>
+          </Field>
+          <Field id="filter-category" label="Category">
+            <Select id="filter-category" name="category" value={draft.category} onChange={change}>
               <option value="">All categories</option>
               {categories.map((category) => (
                 <option key={category}>{category}</option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="startDate">From (UTC)</label>
-            <input
+            </Select>
+          </Field>
+        </div>
+        <div className="filter-bottom">
+          <Field id="search" label="Search comments">
+            <Input
+              id="search"
+              icon={Search}
+              name="search"
+              value={draft.search}
+              onChange={change}
+              maxLength={100}
+              placeholder="A word, an idea, a perspective…"
+            />
+          </Field>
+          <Field id="startDate" label="From (UTC)">
+            <Input
               id="startDate"
               name="startDate"
               type="date"
               value={draft.startDate}
               onChange={change}
             />
-          </div>
-          <div>
-            <label htmlFor="endDate">To (UTC)</label>
-            <input
+          </Field>
+          <Field id="endDate" label="To (UTC)">
+            <Input
               id="endDate"
               name="endDate"
               type="date"
@@ -99,72 +169,81 @@ export default function FeedbackManagement() {
               value={draft.endDate}
               onChange={change}
             />
-          </div>
-        </div>
-        <div className="search-row">
-          <div className="search-input">
-            <Search size={17} />
-            <input
-              aria-label="Search comments"
-              name="search"
-              value={draft.search}
-              maxLength={100}
-              onChange={change}
-              placeholder="Search within comments…"
-            />
-          </div>
-          <button className="button primary small">
+          </Field>
+          <Button type="submit" variant="secondary" className="apply-filters">
             <Filter size={15} />
             Apply filters
-          </button>
+          </Button>
         </div>
         {events.error && (
           <p className="form-error" role="alert">
-            Event filters could not load.{' '}
+            Event choices couldn’t load.{' '}
             <button type="button" className="text-link" onClick={events.reload}>
               Retry
             </button>
           </p>
         )}
-      </form>
-      <section className="panel feedback-table-panel">
+      </Card>
+      {count > 0 && (
+        <div className="active-filters" aria-label="Applied filters">
+          <span>Showing:</span>
+          {Object.entries(filters)
+            .filter(([, value]) => value)
+            .map(([key, value]) => (
+              <button
+                key={key}
+                type="button"
+                aria-label={`Remove ${filterLabel(key, value)} filter`}
+                onClick={() => removeFilter(key)}
+              >
+                {filterLabel(key, value)}
+                <X size={12} />
+              </button>
+            ))}
+        </div>
+      )}
+      <Card className="feedback-table-panel">
         <div className="table-title">
           <h2>
-            All responses{' '}
+            {count ? 'Filtered responses' : 'All responses'}
             <span className="count-badge">{result.data?.pagination.total ?? '—'}</span>
           </h2>
-          <span>Anonymous, always.</span>
+          <span>
+            <ShieldCheck size={14} />
+            No names attached
+          </span>
         </div>
         {result.loading ? (
-          <Loading label="Loading feedback…" />
+          <Skeleton count={4} label="Loading feedback…" />
         ) : result.error ? (
           <ErrorState message={result.error} retry={result.reload} />
         ) : !result.data.feedback.length ? (
           <EmptyState
+            icon={count ? Search : MessageSquare}
             title={count ? 'No responses match your filters' : 'No feedback yet'}
             message={
               count
-                ? 'Try a different event, date range, or rating.'
+                ? 'Try broadening your date range or removing a filter.'
                 : 'Share an open event to start the conversation.'
             }
           >
             {count > 0 && (
-              <button className="button secondary small" onClick={clear}>
+              <Button variant="secondary" size="small" onClick={clear}>
                 Clear filters
-              </button>
+              </Button>
             )}
           </EmptyState>
         ) : (
           <>
-            <div className="table-scroll">
-              <table>
+            <div className="desktop-feedback-table">
+              <Table caption="Anonymous feedback responses">
                 <thead>
                   <tr>
-                    <th>Event / category</th>
-                    <th>Rating</th>
-                    <th>Feedback</th>
-                    <th>Recommends</th>
-                    <th>Received (UTC)</th>
+                    <th scope="col">Event & category</th>
+                    <th scope="col">Rating</th>
+                    <th scope="col">Feedback</th>
+                    <th scope="col">Recommends</th>
+                    <th scope="col">Received (UTC)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,37 +257,46 @@ export default function FeedbackManagement() {
                         <Rating value={item.rating} />
                       </td>
                       <td className="comment-cell">
-                        <p className={expanded === item._id ? '' : 'comment-preview'}>
-                          {item.comment || <span className="muted">No written comment</span>}
-                        </p>
-                        {item.comment.length > 140 && (
-                          <button
-                            className="text-link"
-                            onClick={() => setExpanded(expanded === item._id ? null : item._id)}
-                            aria-expanded={expanded === item._id}
-                          >
-                            {expanded === item._id ? 'Show less' : 'Read full comment'}
-                          </button>
-                        )}
+                        <Comment
+                          item={item}
+                          expanded={expanded === item._id}
+                          toggle={() => setExpanded(expanded === item._id ? null : item._id)}
+                        />
                       </td>
                       <td>
-                        <span
-                          className={`recommend-badge ${item.wouldRecommend === true ? 'yes' : ''}`}
-                        >
-                          {item.wouldRecommend === undefined
-                            ? 'Not answered'
-                            : item.wouldRecommend
-                              ? 'Yes'
-                              : 'No'}
-                        </span>
+                        <Recommendation value={item.wouldRecommend} />
                       </td>
-                      <td className="date-cell">{formatDate(item.createdAt)}</td>
+                      <td className="date-cell">
+                        <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
-            <div className="pagination">
+            <div className="mobile-feedback-list">
+              {result.data.feedback.map((item) => (
+                <article className="mobile-feedback-card" key={item._id}>
+                  <header>
+                    <h3>{item.eventId?.title || 'Unavailable event'}</h3>
+                    <Rating value={item.rating} />
+                  </header>
+                  <Badge>{item.category}</Badge>
+                  <Comment
+                    item={item}
+                    expanded={expanded === item._id}
+                    toggle={() => setExpanded(expanded === item._id ? null : item._id)}
+                  />
+                  <footer>
+                    <span>
+                      Recommends: <Recommendation value={item.wouldRecommend} />
+                    </span>
+                    <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
+                  </footer>
+                </article>
+              ))}
+            </div>
+            <nav className="pagination" aria-label="Feedback pagination">
               <span>
                 Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, result.data.pagination.total)} of{' '}
                 {result.data.pagination.total}
@@ -234,10 +322,10 @@ export default function FeedbackManagement() {
                   <ChevronRight size={18} />
                 </button>
               </div>
-            </div>
+            </nav>
           </>
         )}
-      </section>
+      </Card>
     </>
   );
 }

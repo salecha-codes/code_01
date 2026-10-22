@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { ErrorState, Loading } from './components/ui/Common';
 import PublicLayout from './components/layout/PublicLayout';
@@ -11,6 +11,24 @@ import AdminLogin from './pages/AdminLogin';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 import FeedbackManagement from './pages/FeedbackManagement';
 import EventsManagement from './pages/EventsManagement';
+function RoutePresentation() {
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    const titles = {
+      '/': 'Honest feedback. Better events.',
+      '/feedback': 'Share your feedback',
+      '/feedback/success': 'Thank you',
+      '/admin/login': 'Organizer sign in',
+      '/admin': 'Overview',
+      '/admin/feedback': 'Community feedback',
+      '/admin/events': 'Events',
+    };
+    document.title = `${titles[pathname] || 'Welcome'} · ClubPulse`;
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView();
+    else window.scrollTo(0, 0);
+  }, [pathname, hash]);
+  return null;
+}
 function ProtectedRoute() {
   const { admin, loading, error, retry } = useAuth();
   if (loading) return <Loading label="Checking your session…" />;
@@ -20,6 +38,7 @@ function ProtectedRoute() {
 export default function App() {
   return (
     <Suspense fallback={<Loading label="Loading workspace…" />}>
+      <RoutePresentation />
       <Routes>
         <Route element={<PublicLayout />}>
           <Route index element={<LandingPage />} />

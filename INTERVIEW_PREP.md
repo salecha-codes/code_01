@@ -142,11 +142,11 @@ Line numbers below identify the current implementation; use the named function i
 
 **Why it exists:** It gives participants a straightforward way to send feedback without logging in.
 
-**Important work:** State declarations at lines 12–18 hold the user's choices. `submit` at line 20 validates the optional comment, prevents duplicate clicks using a ref, calls the API, and navigates to the success page only after success.
+**Important work:** State declarations near the start of `FeedbackPage` hold the user’s choices. `submit` validates the optional comment, prevents duplicate clicks using a ref, calls the API, and navigates to the success page only after success.
 
 **Connections:** `useApi('/events')` loads selectable events. `api.js` sends the submission. React Router displays the success route.
 
-**Show the judges:** Line 20 onward, especially `await api('/feedback', ...)` and the `try/catch/finally` behavior. Then show a labeled rating input in the JSX.
+**Show the judges:** The `submit` handler, especially `await api('/feedback', ...)` and the `try/catch/finally` behavior. Then show the native radio groups for ratings and categories in the JSX. The redesigned presentation still sends the same API payload; [the interface guide](docs/DESIGN.md) explains the shared controls.
 
 **Likely question:** “What happens if the network fails?” The form keeps the user's input, clears its loading state, and displays an error. It does not show success before the server acknowledges persistence.
 

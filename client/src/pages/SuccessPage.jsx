@@ -1,26 +1,33 @@
-import { ArrowRight, Check, ShieldCheck } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowRight, Check, MessageSquare, ShieldCheck } from 'lucide-react';
+import { Badge, Button } from '../components/ui/Common';
 export default function SuccessPage() {
   return (
     <section className="success-page">
-      <span className="success-icon">
-        <Check size={36} />
-      </span>
-      <p className="eyebrow">A LITTLE HONESTY GOES A LONG WAY</p>
-      <h1>Thanks for speaking up.</h1>
+      <div className="success-visual" aria-hidden="true">
+        <MessageSquare size={39} strokeWidth={1.3} />
+        <span>
+          <Check size={17} />
+        </span>
+      </div>
+      <p className="eyebrow">YOUR PERSPECTIVE MAKES A DIFFERENCE</p>
+      <h1>
+        Thanks for making
+        <br />
+        things better.
+      </h1>
       <p>
         Your feedback has been submitted anonymously.
-        <br />
-        You’ve helped make the next event a little better.
+        <br />A better next event starts with moments like this.
       </p>
-      <span className="label-pill">
-        <ShieldCheck size={15} />
-        Your response has no student identity attached.
-      </span>
-      <Link className="button primary" to="/">
+      <Badge tone="success">
+        <ShieldCheck size={14} />
+        No student identity attached
+      </Badge>
+      <Button to="/">
         Back to home
-        <ArrowRight size={17} />
-      </Link>
+        <ArrowRight size={16} />
+      </Button>
+      <span className="success-note">Your organizers will take it from here.</span>
     </section>
   );
 }
